@@ -14,24 +14,37 @@ function permutations<T>(arr: T[]): T[][] {
 
 // 🔥 validar que un punto sea caminable
 function isWalkable(grid: Grid, p: Point): boolean {
-  return grid[p.y] && grid[p.y][p.x] === 0;
+  return (
+    p.x >= 0 &&
+    p.y >= 0 &&
+    p.y < grid.length &&
+    p.x < grid[0].length &&
+    grid[p.y][p.x] === 0
+  );
 }
 
-// 🔥 encontrar celda válida cercana (IMPORTANTE)
+// 🔥 NUEVO: buscar celda válida en radio (MUCHO MÁS ROBUSTO)
 function findNearestWalkable(grid: Grid, p: Point): Point | null {
-  const directions = [
-    { x: 0, y: -1 }, // arriba
-    { x: 0, y: 1 },  // abajo
-    { x: -1, y: 0 }, // izquierda
-    { x: 1, y: 0 }   // derecha
-  ];
+  const maxRadius = 10;
 
-  for (const d of directions) {
-    const nx = p.x + d.x;
-    const ny = p.y + d.y;
+  for (let r = 1; r <= maxRadius; r++) {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -r; dy <= r; dy++) {
 
-    if (grid[ny] && grid[ny][nx] === 0) {
-      return { x: nx, y: ny };
+        const nx = p.x + dx;
+        const ny = p.y + dy;
+
+        if (
+          ny >= 0 &&
+          ny < grid.length &&
+          nx >= 0 &&
+          nx < grid[0].length &&
+          grid[ny][nx] === 0
+        ) {
+          return { x: nx, y: ny };
+        }
+
+      }
     }
   }
 
@@ -45,23 +58,41 @@ export function solveTSP(
   destinations: Point[]
 ): { order: Point[]; totalDist: number; paths: Point[][] } {
 
-  // 🔥 CORREGIR DESTINOS (evitar estantes)
+  // 🔥 CORREGIR DESTINOS
   const fixedDestinations: Point[] = [];
 
   for (const dest of destinations) {
+
+    // ✔ si es válido
     if (isWalkable(grid, dest)) {
       fixedDestinations.push(dest);
+      continue;
+    }
+
+    // 🔥 intentar corregir
+    const fixed = findNearestWalkable(grid, dest);
+
+    if (fixed) {
+      fixedDestinations.push(fixed);
     } else {
-      const fixed = findNearestWalkable(grid, dest);
-      if (fixed) fixedDestinations.push(fixed);
+      console.warn("Destino sin solución:", dest);
     }
   }
 
+  // ❌ si no hay destinos válidos
   if (fixedDestinations.length === 0) {
     return { order: [], totalDist: 0, paths: [] };
   }
 
-  const perms = permutations(fixedDestinations);
+  // 🔥 eliminar duplicados después de corregir
+  const unique = new Map<string, Point>();
+  fixedDestinations.forEach(p => {
+    unique.set(`${p.x}-${p.y}`, p);
+  });
+
+  const finalDestinations = Array.from(unique.values());
+
+  const perms = permutations(finalDestinations);
 
   let best = {
     order: perms[0],
@@ -69,7 +100,9 @@ export function solveTSP(
     paths: [] as Point[][]
   };
 
+  // 🔥 evaluar todas las rutas
   for (const perm of perms) {
+
     const stops = [entrance, ...perm];
 
     let totalDist = 0;
@@ -77,8 +110,10 @@ export function solveTSP(
     let valid = true;
 
     for (let i = 0; i < stops.length - 1; i++) {
+
       const path = findPath(grid, stops[i], stops[i + 1]);
 
+      // ❌ si no hay camino
       if (path.length === 0) {
         valid = false;
         break;
@@ -88,6 +123,7 @@ export function solveTSP(
       paths.push(path);
     }
 
+    // 🔥 elegir mejor solución
     if (valid && totalDist < best.totalDist) {
       best = {
         order: perm,

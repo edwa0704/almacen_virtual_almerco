@@ -4,7 +4,8 @@ import {
   drawRoute,
   drawDestinationMarker,
   clearRoutes,
-  clearMarkers
+  clearMarkers,
+  stopPickerAnimation
 } from "./scene/route";
 
 import { generateWarehouseGrid } from "./core/grid";
@@ -58,37 +59,69 @@ function isWalkable(grid: number[][], p: Point): boolean {
   );
 }
 
+// 🔥 eliminar duplicados
+function removeDuplicates(points: Point[]): Point[] {
+  const seen = new Set<string>();
+  return points.filter(p => {
+    const key = `${p.x}-${p.y}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // ---------------- PANEL ----------------
 const panel = document.getElementById("panel")!;
 
 setupControls(panel, config.rows, config.cols, (destinations: Point[]) => {
 
-  // 🔥 LIMPIAR ESCENA
+  // 🔥 LIMPIEZA TOTAL SIEMPRE
   clearRoutes(scene);
   clearMarkers(scene);
+  stopPickerAnimation(scene);
 
-  if (destinations.length === 0) return;
-
-  // 🔥 VALIDAR DESTINOS
-  const invalidDestinations = destinations.filter(p => !isWalkable(grid, p));
-  const validDestinations = destinations.filter(p => isWalkable(grid, p));
-
-  // 🔴 OPCIÓN 1: ALERTA VISUAL
-  if (invalidDestinations.length > 0) {
-    alert("⚠️ Algunos destinos están dentro de estantes. Se dibujarán en rojo como advertencia.");
-  }
-
-  // ❌ si ninguno es válido para ruta
-  if (validDestinations.length === 0) {
-    // dibujar destinos inválidos solo para visual
-    invalidDestinations.forEach((p, index) => {
-      drawDestinationMarker(scene, p, index, "red"); // color rojo para inválidos
-    });
-    showRouteError();
+  // 🔥 SI LIMPIAR
+  if (destinations.length === 0) {
+    const box = document.getElementById("route-info");
+    if (box) box.style.display = "none";
     return;
   }
 
-  // 🔥 TSP solo con destinos válidos
+  // 🔥 eliminar duplicados
+  const uniqueDestinations = removeDuplicates(destinations);
+
+  // 🔥 separar válidos e inválidos
+  const invalidDestinations = uniqueDestinations.filter(p => !isWalkable(grid, p));
+  const validDestinations = uniqueDestinations.filter(p => isWalkable(grid, p));
+
+  // ⚠️ aviso
+  if (invalidDestinations.length > 0) {
+    alert("⚠️ Algunos destinos están dentro de estantes. Se dibujarán en rojo.");
+  }
+
+  // ❌ TODOS inválidos (SOLUCIÓN CLAVE)
+  if (validDestinations.length === 0) {
+
+    // dibujar solo en rojo
+    invalidDestinations.forEach((p, index) => {
+      drawDestinationMarker(scene, p, index, 0xff0000);
+    });
+
+    // 🔥 mensaje PRO (NO error feo)
+    const box = document.getElementById("route-info");
+    if (box) {
+      box.style.display = "block";
+      box.innerHTML = `
+        <strong style="color:#e94560">⚠️ Destinos inválidos</strong><br>
+        Todos los puntos están dentro de estantes.<br>
+        Intenta coordenadas en pasillos.
+      `;
+    }
+
+    return;
+  }
+
+  // 🔥 TSP
   const result = solveTSP(grid, entrance, validDestinations);
 
   // ❌ sin solución
@@ -97,15 +130,20 @@ setupControls(panel, config.rows, config.cols, (destinations: Point[]) => {
     return;
   }
 
-  // 🔥 DIBUJAR RUTAS y marcadores
+  // 🔥 DIBUJAR RUTAS + DESTINOS CORRECTOS
   result.paths.forEach((path, index) => {
     drawRoute(scene, path, index);
-    drawDestinationMarker(scene, result.order[index], index); // colores normales
+    drawDestinationMarker(scene, result.order[index], index);
   });
 
-  // 🔥 DIBUJAR destinos inválidos en rojo
+  // 🔴 DIBUJAR INVALIDOS
   invalidDestinations.forEach((p, index) => {
-    drawDestinationMarker(scene, p, validDestinations.length + index, "red");
+    drawDestinationMarker(
+      scene,
+      p,
+      validDestinations.length + index,
+      0xff0000
+    );
   });
 
   // 🔥 INFO
@@ -117,7 +155,8 @@ setupControls(panel, config.rows, config.cols, (destinations: Point[]) => {
   // DEBUG
   console.log("Orden óptimo:", result.order);
   console.log("Distancia total:", result.totalDist);
-  console.log("Destinos inválidos (dibujados en rojo):", invalidDestinations);
+  console.log("Válidos:", validDestinations);
+  console.log("Inválidos:", invalidDestinations);
 });
 
 // ---------------- LOOP ----------------

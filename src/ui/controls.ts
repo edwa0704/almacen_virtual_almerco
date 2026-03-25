@@ -57,7 +57,7 @@ export function setupControls(
     </div>
   `;
 
-  // 🎨 estilos (se mantienen)
+  // 🎨 estilos
   const style = document.createElement("style");
   style.textContent = `
     .form-group { display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
@@ -85,16 +85,25 @@ export function setupControls(
   `;
   document.head.appendChild(style);
 
-  // 🔥 EVENTO PRINCIPAL (MULTI DESTINO)
+  // 🔥 EVENTO PRINCIPAL
   document.getElementById("btn-find")!.addEventListener("click", () => {
     const destinations: Point[] = [];
 
     for (let i = 1; i <= 5; i++) {
-      const x = parseInt((document.getElementById(`dest-x-${i}`) as HTMLInputElement).value);
-      const y = parseInt((document.getElementById(`dest-y-${i}`) as HTMLInputElement).value);
+      const xInput = document.getElementById(`dest-x-${i}`) as HTMLInputElement;
+      const yInput = document.getElementById(`dest-y-${i}`) as HTMLInputElement;
 
+      const x = parseInt(xInput.value);
+      const y = parseInt(yInput.value);
+
+      // 🔥 VALIDACIÓN REAL
       if (!isNaN(x) && !isNaN(y)) {
-        destinations.push({ x, y });
+        if (
+          x >= 0 && x < gridCols &&
+          y >= 0 && y < gridRows
+        ) {
+          destinations.push({ x, y });
+        }
       }
     }
 
@@ -103,13 +112,25 @@ export function setupControls(
     onFindRoute(destinations);
   });
 
-  // limpiar
+  // 🔥 LIMPIAR (CORREGIDO)
   document.getElementById("btn-clear")!.addEventListener("click", () => {
+
+    // ✔ limpiar inputs
+    for (let i = 1; i <= 5; i++) {
+      (document.getElementById(`dest-x-${i}`) as HTMLInputElement).value = "";
+      (document.getElementById(`dest-y-${i}`) as HTMLInputElement).value = "";
+    }
+
+    // ✔ ocultar info
+    const box = document.getElementById("route-info");
+    if (box) box.style.display = "none";
+
+    // ✔ limpiar escena
     onFindRoute([]);
   });
 }
 
-// 🔥 NUEVO: INFO PARA TSP
+// 🔥 INFO TSP
 export function showRouteInfo(totalDist: number, order: Point[]): void {
   const box = document.getElementById("route-info");
   if (!box) return;
@@ -126,7 +147,7 @@ export function showRouteInfo(totalDist: number, order: Point[]): void {
   `;
 }
 
-// error
+// 🔥 ERROR
 export function showRouteError(): void {
   const box = document.getElementById("route-info");
   if (!box) return;
