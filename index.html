@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Almacén Virtual — Grupo Almerco</title>
+
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #1a1a2e;
+        color: #eee;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background: #16213e;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 2px solid #0f3460;
+      }
+
+      header h1 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #e94560;
+      }
+
+      header span {
+        font-size: 0.85rem;
+        color: #aaa;
+      }
+
+      .badge {
+        display: inline-block;
+        background: #00cc88;
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+      }
+
+      #app {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      #canvas-container {
+        flex: 1;
+        position: relative;
+      }
+
+      #canvas-container canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      #panel {
+        width: 280px;
+        background: #16213e;
+        border-left: 1px solid #0f3460;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow-y: auto;
+      }
+
+      #panel h2 {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #e94560;
+        border-bottom: 1px solid #0f3460;
+        padding-bottom: 8px;
+      }
+
+      .legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 0.82rem;
+        color: #ccc;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      .info-box {
+        background: #0f3460;
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 0.8rem;
+        color: #aaa;
+        line-height: 1.6;
+      }
+
+      .footer {
+        font-size: 0.7rem;
+        text-align: center;
+        color: #666;
+        margin-top: auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>🏭 Almacén Virtual Almerco</h1>
+      <span>Sistema de Enrutamiento y Optimización de Picking</span>
+      <span class="badge">COMPLETADO</span>
+    </header>
+
+    <div id="app">
+      <!-- ESCENA 3D -->
+      <div id="canvas-container"></div>
+
+      <!-- PANEL -->
+      <div id="panel">
+        <h2>Vista Isométrica</h2>
+
+        <div class="legend">
+          <div class="legend-item">
+            <div class="dot" style="background:#8b6914"></div>
+            <span>Estante (obstáculo)</span>
+          </div>
+
+          <div class="legend-item">
+            <div class="dot" style="background:#e0e0e0"></div>
+            <span>Pasillo (transitable)</span>
+          </div>
+
+          <div class="legend-item">
+            <div class="dot" style="background:#00cc44; border-radius:50%"></div>
+            <span>Entrada del almacén</span>
+          </div>
+
+          <div class="legend-item">
+            <div class="dot" style="background:#00ff88; border-radius:50%"></div>
+            <span>Ruta optimizada (TSP)</span>
+          </div>
+
+          <div class="legend-item">
+            <div class="dot" style="background:#ff6b6b; border-radius:50%"></div>
+            <span>Destinos múltiples</span>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <strong>Grid:</strong> 20×20 celdas<br>
+          <strong>Estantes:</strong> 8 bloques<br>
+          <strong>Cámara:</strong> Ortográfica isométrica<br>
+          <strong>Motor:</strong> Three.js r159+<br>
+          <strong>Algoritmos:</strong> A* + TSP
+        </div>
+
+        <!-- ESTADO FINAL -->
+        <div class="info-box" style="color:#7ec8e3;">
+          ✅ Fase 1: Grid generado<br>
+          ✅ Fase 2: A* implementado<br>
+          ✅ Fase 3: Vista 3D activa<br>
+          ✅ Fase 4: Trazado de rutas<br>
+          ✅ Fase 5: Optimización TSP
+        </div>
+
+        <div class="footer">
+          Proyecto de Optimización de Rutas — SENATI
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY POINT -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
