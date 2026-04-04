@@ -1,193 +1,195 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Almacén Virtual — Grupo Almerco</title>
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almacén Virtual Almerco - Picking Optimizado</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Estilos Base */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            background: #e0e0e0; 
+        }
 
-      body {
-        font-family: 'Segoe UI', sans-serif;
-        background: #1a1a2e;
-        color: #eee;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
+        /* Barra Superior (Header) */
+        header { 
+            background: #102027; 
+            color: white; 
+            padding: 12px 25px; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            border-bottom: 4px solid #00c853; 
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .header-title { font-weight: bold; font-size: 1.3em; letter-spacing: 0.5px; }
+        .header-subtitle { color: #9fa8da; font-size: 0.9em; flex: 1; }
+        .badge { background: #00c853; padding: 3px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
 
-      header {
-        background: #16213e;
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border-bottom: 2px solid #0f3460;
-      }
+        /* Contenedor Principal */
+        #main-container { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+            width: 100%;
+        }
+        
+        /* Área del Almacén 3D (Izquierda) */
+        #canvas-container { 
+            flex: 1; 
+            position: relative; 
+            background: #d0d0d0; 
+            cursor: move;
+        }
 
-      header h1 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #e94560;
-      }
+        /* Panel Lateral de Picking (Derecha) */
+        #sidebar { 
+            width: 320px; 
+            background: #1a237e; 
+            color: white; 
+            padding: 20px; 
+            overflow-y: auto; 
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5); 
+            z-index: 10;
+        }
+        
+        h2 { color: #ff5252; font-size: 1.1em; border-bottom: 1px dashed #3949ab; padding-bottom: 10px; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Estilos de los Inputs */
+        .input-group { 
+            margin-bottom: 15px; 
+            background: #283593; 
+            padding: 12px; 
+            border-radius: 6px; 
+            border: 1px solid #3f51b5; 
+        }
+        label { display: block; font-size: 0.75em; color: #9fa8da; margin-bottom: 4px; font-weight: bold; }
+        input { 
+            width: 90%; 
+            background: #0d47a1; 
+            border: 1px solid #40c4ff; 
+            color: white; 
+            padding: 7px; 
+            border-radius: 4px; 
+            font-size: 0.95em; 
+            margin-bottom: 5px;
+            outline: none;
+        }
+        input:focus { border-color: #ff5252; }
+        
+        /* Botones de Acción */
+        .btn-action { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 0.95em;
+            transition: all 0.2s ease;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px;
+        }
+        #btnOptimizar { background: #ff5252; color: white; margin-top: 10px; }
+        #btnOptimizar:hover { background: #ff1744; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        
+        #btnLimpiar { background: #546e7a; color: white; margin-top: 8px; }
+        #btnLimpiar:hover { background: #455a64; transform: translateY(-2px); }
 
-      header span {
-        font-size: 0.85rem;
-        color: #aaa;
-      }
+        /* Panel de Resultados */
+        .result-panel { 
+            background: #0d47a1; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-top: 20px; 
+            border-left: 6px solid #40c4ff; 
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-      .badge {
-        display: inline-block;
-        background: #00cc88;
-        color: white;
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 10px;
-        font-weight: 600;
-      }
+        /* Leyenda */
+        .legend { margin-top: 25px; border-top: 1px solid #3949ab; padding-top: 15px; }
+        .legend-title { font-size: 0.9em; margin-bottom: 12px; color: #ff5252; font-weight: bold; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85em; color: #e0e0e0; }
+        .dot { width: 14px; height: 14px; border-radius: 3px; margin-right: 12px; }
 
-      #app {
-        display: flex;
-        flex: 1;
-        overflow: hidden;
-      }
-
-      #canvas-container {
-        flex: 1;
-        position: relative;
-      }
-
-      #canvas-container canvas {
-        width: 100% !important;
-        height: 100% !important;
-      }
-
-      #panel {
-        width: 280px;
-        background: #16213e;
-        border-left: 1px solid #0f3460;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        overflow-y: auto;
-      }
-
-      #panel h2 {
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #e94560;
-        border-bottom: 1px solid #0f3460;
-        padding-bottom: 8px;
-      }
-
-      .legend {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        font-size: 0.82rem;
-        color: #ccc;
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 3px;
-        flex-shrink: 0;
-      }
-
-      .info-box {
-        background: #0f3460;
-        border-radius: 6px;
-        padding: 10px;
-        font-size: 0.8rem;
-        color: #aaa;
-        line-height: 1.6;
-      }
-
-      .footer {
-        font-size: 0.7rem;
-        text-align: center;
-        color: #666;
-        margin-top: auto;
-      }
+        /* Checklist de Fases */
+        .checklist { 
+            margin-top: 25px; 
+            background: #001970; 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-size: 0.82em; 
+            border: 1px solid #1a237e;
+        }
+        .check-item { margin-bottom: 7px; color: #a5d6a7; display: flex; align-items: center; gap: 10px; }
+        .check-item.current { color: #ffab40; font-weight: bold; }
     </style>
-  </head>
+</head>
+<body>
 
-  <body>
+    <!-- Cabecera Superior -->
     <header>
-      <h1>🏭 Almacén Virtual Almerco</h1>
-      <span>Sistema de Enrutamiento y Optimización de Picking</span>
-      <span class="badge">COMPLETADO</span>
+        <span class="header-title">📊 Almacén Virtual Almerco</span>
+        <span class="header-subtitle">Sistema de Enrutamiento y Optimización de Picking</span>
+        <span class="badge">PROYECTO COMPLETADO</span>
     </header>
 
-    <div id="app">
-      <!-- ESCENA 3D -->
-      <div id="canvas-container"></div>
+    <div id="main-container">
+        <!-- Espacio para el Almacén 3D -->
+        <div id="canvas-container"></div>
 
-      <!-- PANEL -->
-      <div id="panel">
-        <h2>Vista Isométrica</h2>
+        <!-- Panel Lateral Derecho -->
+        <div id="sidebar">
+            <h2>PICKING (MULTI-DESTINO)</h2>
+            
+            <!-- Contenedor para los 5 destinos generado por JS -->
+            <div id="inputs-container"></div>
 
-        <div class="legend">
-          <div class="legend-item">
-            <div class="dot" style="background:#8b6914"></div>
-            <span>Estante (obstáculo)</span>
-          </div>
+            <!-- Botones de Control -->
+            <button id="btnOptimizar" class="btn-action">🚀 Optimizar Ruta</button>
+            <button id="btnLimpiar" class="btn-action">🧹 Limpiar Ruta</button>
 
-          <div class="legend-item">
-            <div class="dot" style="background:#e0e0e0"></div>
-            <span>Pasillo (transitable)</span>
-          </div>
+            <!-- Área de Resultados (se muestra al calcular) -->
+            <div id="result-area" style="display: none;">
+                <div class="result-panel">
+                    <div style="color: #40c4ff; font-weight: bold; font-size: 0.95em; margin-bottom: 8px;">🚀 Ruta Óptima Calculada</div>
+                    <div id="route-order" style="font-size: 0.85em; color: #fff; line-height: 1.5; margin-bottom: 10px;"></div>
+                    <div id="route-dist" style="font-size: 1em; font-weight: bold; color: #ffea00;"></div>
+                    <div style="font-size: 0.75em; color: #9fa8da; margin-top: 5px;">Destinos procesados: 5</div>
+                </div>
+            </div>
 
-          <div class="legend-item">
-            <div class="dot" style="background:#00cc44; border-radius:50%"></div>
-            <span>Entrada del almacén</span>
-          </div>
+            <!-- Sección de Leyenda -->
+            <div class="legend">
+                <div class="legend-title">LEYENDA</div>
+                <div class="legend-item"><div class="dot" style="background: #111111; border: 1px solid #444;"></div> Estante (Obstáculo)</div>
+                <div class="legend-item"><div class="dot" style="background: #999999;"></div> Pasillo (Transitable)</div>
+                <div class="legend-item"><div class="dot" style="background: #00ff00; border-radius: 50%;"></div> Entrada (Inicio)</div>
+                <div class="legend-item"><div class="dot" style="background: #00e5ff;"></div> Ruta Calculada</div>
+            </div>
 
-          <div class="legend-item">
-            <div class="dot" style="background:#00ff88; border-radius:50%"></div>
-            <span>Ruta optimizada (TSP)</span>
-          </div>
-
-          <div class="legend-item">
-            <div class="dot" style="background:#ff6b6b; border-radius:50%"></div>
-            <span>Destinos múltiples</span>
-          </div>
+            <!-- Checklist del Proyecto -->
+            <div class="checklist">
+                <div class="check-item">✅ Fase 1: Grid generado</div>
+                <div class="check-item">✅ Fase 2: A* implementado</div>
+                <div class="check-item">✅ Fase 3: Vista 3D activa</div>
+                <div class="check-item">✅ Fase 4: Trazado de rutas</div>
+                <div class="check-item current">🔥 Fase 5: Optimización TSP</div>
+            </div>
         </div>
-
-        <div class="info-box">
-          <strong>Grid:</strong> 20×20 celdas<br>
-          <strong>Estantes:</strong> 8 bloques<br>
-          <strong>Cámara:</strong> Ortográfica isométrica<br>
-          <strong>Motor:</strong> Three.js r159+<br>
-          <strong>Algoritmos:</strong> A* + TSP
-        </div>
-
-        <!-- ESTADO FINAL -->
-        <div class="info-box" style="color:#7ec8e3;">
-          ✅ Fase 1: Grid generado<br>
-          ✅ Fase 2: A* implementado<br>
-          ✅ Fase 3: Vista 3D activa<br>
-          ✅ Fase 4: Trazado de rutas<br>
-          ✅ Fase 5: Optimización TSP
-        </div>
-
-        <div class="footer">
-          Proyecto de Optimización de Rutas — SENATI
-        </div>
-      </div>
     </div>
 
-    <!-- ENTRY POINT -->
+    <!-- Script Principal -->
     <script type="module" src="/src/main.ts"></script>
-  </body>
+</body>
 </html>

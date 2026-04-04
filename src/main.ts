@@ -1,171 +1,51 @@
-import {
-  startPickerAnimation,
-  updatePickerAnimation,
-  drawRoute,
-  drawDestinationMarker,
-  clearRoutes,
-  clearMarkers,
-  stopPickerAnimation
-} from "./scene/route";
+import { WarehouseConfig, generateGrid } from './core/grid';
+import { WarehouseRenderer } from './scene/renderer';
+import { solvePickingTSP } from './core/tsp';
+import { drawFullRoute, clearRoutes, animatePicker } from './scene/route';
+import { initUI, updateResults } from './ui/controls';
 
-import { generateWarehouseGrid } from "./core/grid";
-import { createScene, renderWarehouse } from "./scene/renderer";
-
-import {
-  setupControls,
-  showRouteInfo,
-  showRouteError
-} from "./ui/controls";
-
-import { solveTSP } from "./core/tsp";
-
-import type { WarehouseConfig } from "./core/grid";
-import type { Point } from "./core/pathfinder";
-
-// ---------------- CONFIG ----------------
 const config: WarehouseConfig = {
-  rows: 20,
-  cols: 20,
-  shelves: [
-    { x: 1, y: 1, w: 3, h: 5 },
-    { x: 6, y: 1, w: 3, h: 5 },
-    { x: 11, y: 1, w: 3, h: 5 },
-    { x: 16, y: 1, w: 3, h: 5 },
-    { x: 1, y: 9, w: 3, h: 5 },
-    { x: 6, y: 9, w: 3, h: 5 },
-    { x: 11, y: 9, w: 3, h: 5 },
-    { x: 16, y: 9, w: 3, h: 5 },
-  ],
-  entrance: { x: 0, y: 0 },
+    rows: 60, cols: 60,
+    entrance: { x: 30, y: 0 }, 
+    shelves: [
+        { id: 1, x: 25, y: 0, w: 1, h: 15, color: 0xcc3333, levels: 4 },
+        { id: 2, x: 35, y: 0, w: 1, h: 25, color: 0x111111, levels: 4 },
+        { id: 3, x: 5, y: 15, w: 20, h: 1, color: 0x6a1b9a, levels: 4 },
+        { id: 4, x: 5, y: 25, w: 30, h: 1, color: 0xe67e22, levels: 4 },
+        { id: 5, x: 4, y: 15, w: 1, h: 11, color: 0x1b5e20, levels: 4 }
+    ]
 };
 
-const grid = generateWarehouseGrid(config);
-const entrance: Point = { ...config.entrance };
+const pickingPoints: Record<number, {x:number, y:number}> = {
+    1: { x: 27, y: 8 }, 2: { x: 33, y: 12 }, 3: { x: 15, y: 17 }, 4: { x: 20, y: 23 }, 5: { x: 6, y: 20 }
+};
 
-// ---------------- ESCENA ----------------
-const container = document.getElementById("canvas-container")!;
-const { scene, camera, renderer } = createScene(container);
+const grid = generateGrid(config);
+const app = new WarehouseRenderer();
+app.init(config);
 
-renderWarehouse(scene, grid, config);
-
-// ---------------- VALIDACIÓN ----------------
-function isWalkable(grid: number[][], p: Point): boolean {
-  return (
-    p.x >= 0 &&
-    p.y >= 0 &&
-    p.y < grid.length &&
-    p.x < grid[0].length &&
-    grid[p.y][p.x] === 0
-  );
-}
-
-// 🔥 eliminar duplicados
-function removeDuplicates(points: Point[]): Point[] {
-  const seen = new Set<string>();
-  return points.filter(p => {
-    const key = `${p.x}-${p.y}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-// ---------------- PANEL ----------------
-const panel = document.getElementById("panel")!;
-
-setupControls(panel, config.rows, config.cols, (destinations: Point[]) => {
-
-  // 🔥 LIMPIEZA TOTAL SIEMPRE
-  clearRoutes(scene);
-  clearMarkers(scene);
-  stopPickerAnimation(scene);
-
-  // 🔥 SI LIMPIAR
-  if (destinations.length === 0) {
-    const box = document.getElementById("route-info");
-    if (box) box.style.display = "none";
-    return;
-  }
-
-  // 🔥 eliminar duplicados
-  const uniqueDestinations = removeDuplicates(destinations);
-
-  // 🔥 separar válidos e inválidos
-  const invalidDestinations = uniqueDestinations.filter(p => !isWalkable(grid, p));
-  const validDestinations = uniqueDestinations.filter(p => isWalkable(grid, p));
-
-  // ⚠️ aviso
-  if (invalidDestinations.length > 0) {
-    alert("⚠️ Algunos destinos están dentro de estantes. Se dibujarán en rojo.");
-  }
-
-  // ❌ TODOS inválidos (SOLUCIÓN CLAVE)
-  if (validDestinations.length === 0) {
-
-    // dibujar solo en rojo
-    invalidDestinations.forEach((p, index) => {
-      drawDestinationMarker(scene, p, index, 0xff0000);
-    });
-
-    // 🔥 mensaje PRO (NO error feo)
-    const box = document.getElementById("route-info");
-    if (box) {
-      box.style.display = "block";
-      box.innerHTML = `
-        <strong style="color:#e94560">⚠️ Destinos inválidos</strong><br>
-        Todos los puntos están dentro de estantes.<br>
-        Intenta coordenadas en pasillos.
-      `;
+initUI(config.shelves, async (selected) => {
+    const uniqueIds = Array.from(new Set(selected.map(s => s.id)));
+    const targets = uniqueIds.map(id => pickingPoints[id as number]);
+    const result = await solvePickingTSP(grid, config.entrance, targets);
+    
+    if (result && result.paths) {
+        const pPerStop = result.order.map(p => {
+            const id = Number(Object.keys(pickingPoints).find(k => pickingPoints[+k].x === p.x && pickingPoints[+k].y === p.y));
+            return selected.filter(s => s.id === id);
+        });
+        drawFullRoute(app.scene, result.paths, pPerStop);
+        const orderStr = result.order.map((p, i) => {
+            const id = Object.keys(pickingPoints).find(k => pickingPoints[+k].x === p.x && pickingPoints[+k].y === p.y);
+            const levels = pPerStop[i].map(pr => pr.level).join(',');
+            return `Est. ${id} (Niv: ${levels})`;
+        }).join(' → ');
+        updateResults(orderStr, result.totalDist);
     }
-
-    return;
-  }
-
-  // 🔥 TSP
-  const result = solveTSP(grid, entrance, validDestinations);
-
-  // ❌ sin solución
-  if (!result || result.paths.length === 0) {
-    showRouteError();
-    return;
-  }
-
-  // 🔥 DIBUJAR RUTAS + DESTINOS CORRECTOS
-  result.paths.forEach((path, index) => {
-    drawRoute(scene, path, index);
-    drawDestinationMarker(scene, result.order[index], index);
-  });
-
-  // 🔴 DIBUJAR INVALIDOS
-  invalidDestinations.forEach((p, index) => {
-    drawDestinationMarker(
-      scene,
-      p,
-      validDestinations.length + index,
-      0xff0000
-    );
-  });
-
-  // 🔥 INFO
-  showRouteInfo(result.totalDist, result.order);
-
-  // 🔥 ANIMACIÓN
-  startPickerAnimation(scene, result.paths);
-
-  // DEBUG
-  console.log("Orden óptimo:", result.order);
-  console.log("Distancia total:", result.totalDist);
-  console.log("Válidos:", validDestinations);
-  console.log("Inválidos:", invalidDestinations);
+}, () => {
+    clearRoutes(app.scene);
+    document.getElementById('result-area')!.style.display = 'none';
 });
 
-// ---------------- LOOP ----------------
-function animate() {
-  requestAnimationFrame(animate);
-
-  updatePickerAnimation();
-
-  renderer.render(scene, camera);
-}
-
-animate();
+function tick() { requestAnimationFrame(tick); animatePicker(); app.render(); }
+tick();

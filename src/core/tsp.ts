@@ -1,137 +1,42 @@
-import type { Point } from "./pathfinder";
-import type { Grid } from "./grid";
-import { findPath } from "./pathfinder";
+import { Grid, Point } from './grid';
+import { findPath } from './pathfinder';
 
-// 🔥 generar permutaciones
-function permutations<T>(arr: T[]): T[][] {
-  if (arr.length <= 1) return [arr];
+export async function solvePickingTSP(grid: Grid, entrance: Point, targets: Point[]) {
+    if (targets.length === 0) return null;
+    const allNodes = [entrance, ...targets];
+    const memo: Record<string, Point[]> = {};
 
-  return arr.flatMap((item, i) => {
-    const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
-    return permutations(rest).map(p => [item, ...p]);
-  });
-}
-
-// 🔥 validar que un punto sea caminable
-function isWalkable(grid: Grid, p: Point): boolean {
-  return (
-    p.x >= 0 &&
-    p.y >= 0 &&
-    p.y < grid.length &&
-    p.x < grid[0].length &&
-    grid[p.y][p.x] === 0
-  );
-}
-
-// 🔥 NUEVO: buscar celda válida en radio (MUCHO MÁS ROBUSTO)
-function findNearestWalkable(grid: Grid, p: Point): Point | null {
-  const maxRadius = 10;
-
-  for (let r = 1; r <= maxRadius; r++) {
-    for (let dx = -r; dx <= r; dx++) {
-      for (let dy = -r; dy <= r; dy++) {
-
-        const nx = p.x + dx;
-        const ny = p.y + dy;
-
-        if (
-          ny >= 0 &&
-          ny < grid.length &&
-          nx >= 0 &&
-          nx < grid[0].length &&
-          grid[ny][nx] === 0
-        ) {
-          return { x: nx, y: ny };
+    for (let i = 0; i < allNodes.length; i++) {
+        for (let j = 0; j < allNodes.length; j++) {
+            if (i === j) continue;
+            const key = `${allNodes[i].x},${allNodes[i].y}-${allNodes[j].x},${allNodes[j].y}`;
+            memo[key] = findPath(grid, allNodes[i], allNodes[j]);
         }
-
-      }
-    }
-  }
-
-  return null;
-}
-
-// 🔥 TSP PRINCIPAL
-export function solveTSP(
-  grid: Grid,
-  entrance: Point,
-  destinations: Point[]
-): { order: Point[]; totalDist: number; paths: Point[][] } {
-
-  // 🔥 CORREGIR DESTINOS
-  const fixedDestinations: Point[] = [];
-
-  for (const dest of destinations) {
-
-    // ✔ si es válido
-    if (isWalkable(grid, dest)) {
-      fixedDestinations.push(dest);
-      continue;
     }
 
-    // 🔥 intentar corregir
-    const fixed = findNearestWalkable(grid, dest);
+    const getPerms = (arr: Point[]): Point[][] => {
+        if (arr.length <= 1) return [arr];
+        return arr.flatMap((v, i) => getPerms([...arr.slice(0, i), ...arr.slice(i + 1)]).map(p => [v, ...p]));
+    };
 
-    if (fixed) {
-      fixedDestinations.push(fixed);
-    } else {
-      console.warn("Destino sin solución:", dest);
-    }
-  }
+    const perms = getPerms(targets);
+    let bestDist = Infinity;
+    let bestOrder: Point[] = [];
 
-  // ❌ si no hay destinos válidos
-  if (fixedDestinations.length === 0) {
-    return { order: [], totalDist: 0, paths: [] };
-  }
-
-  // 🔥 eliminar duplicados después de corregir
-  const unique = new Map<string, Point>();
-  fixedDestinations.forEach(p => {
-    unique.set(`${p.x}-${p.y}`, p);
-  });
-
-  const finalDestinations = Array.from(unique.values());
-
-  const perms = permutations(finalDestinations);
-
-  let best = {
-    order: perms[0],
-    totalDist: Infinity,
-    paths: [] as Point[][]
-  };
-
-  // 🔥 evaluar todas las rutas
-  for (const perm of perms) {
-
-    const stops = [entrance, ...perm];
-
-    let totalDist = 0;
-    const paths: Point[][] = [];
-    let valid = true;
-
-    for (let i = 0; i < stops.length - 1; i++) {
-
-      const path = findPath(grid, stops[i], stops[i + 1]);
-
-      // ❌ si no hay camino
-      if (path.length === 0) {
-        valid = false;
-        break;
-      }
-
-      totalDist += path.length - 1;
-      paths.push(path);
+    for (const p of perms) {
+        const full = [entrance, ...p];
+        let d = 0;
+        for (let i = 0; i < full.length - 1; i++) {
+            const k = `${full[i].x},${full[i].y}-${full[i+1].x},${full[i+1].y}`;
+            d += memo[k].length - 1;
+        }
+        if (d < bestDist) { bestDist = d; bestOrder = p; }
     }
 
-    // 🔥 elegir mejor solución
-    if (valid && totalDist < best.totalDist) {
-      best = {
-        order: perm,
-        totalDist,
-        paths
-      };
+    const finalPaths: Point[][] = [];
+    const finalOrder = [entrance, ...bestOrder];
+    for (let i = 0; i < finalOrder.length - 1; i++) {
+        finalPaths.push(memo[`${finalOrder[i].x},${finalOrder[i].y}-${finalOrder[i+1].x},${finalOrder[i+1].y}`]);
     }
-  }
-
-  return best;
+    return { paths: finalPaths, totalDist: bestDist, order: bestOrder };
 }
