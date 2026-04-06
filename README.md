@@ -1,11 +1,11 @@
 🏭 Almacén Virtual Almerco
 Sistema de Enrutamiento y Optimización de Picking
 
-![UI](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/ui.png?v=2)
+![UI](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/ui_v2.png?v=1)
 
-![Tests](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/tests.png?v=2)
+![Tests](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/tests_v2.png?v=1)
 
-![Vista 1](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/demo1.png?v=2)
+![Vista 1](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/demo1_v2.png?v=1)
 
 🧠 Descripción del Proyecto
 
@@ -18,14 +18,37 @@ Este proyecto construye el motor de navegación del almacén digital:
 🔹 Optimiza el orden de destinos con TSP
 🔹 Visualiza rutas en 3D isométrico con colores por segmento
 
+🚧 Desafío Logístico
+
+En entornos reales de almacén, las rutas de picking pueden ser caóticas, generando hasta un 40% de pérdida en eficiencia operativa.
+
+Este sistema soluciona ese problema mediante algoritmos inteligentes que calculan el camino más corto evitando recorridos innecesarios.
+
+💡 Solución Implementada
+
+Se diseñó un sistema basado en algoritmos de búsqueda y optimización que:
+
+- Reduce recorridos redundantes
+- Mejora la eficiencia del operario
+- Calcula rutas óptimas en milisegundos
+
 🖥️ Demo
 
 📌 El punto blanco representa al operario moviéndose por la ruta óptima.
 📌 Cada segmento tiene un color distinto por destino.
 
+🎛️ Funcionalidades del Panel
+
+- Selección de estación de picking
+- Selección de nivel del almacén
+- Reset de rutas
+- Visualización clara del flujo de recorrido
+
 🧠 Algoritmos
 
-🔹 A* — Función de Evaluación
+📌 Característica clave:
+
+El algoritmo A* permite la evasión dinámica de obstáculos (estantes del almacén), garantizando rutas viables en todo momento.
 
 ```bash
 f(n) = g(n) + h(n)
@@ -42,6 +65,12 @@ h(n) = |n.x - destino.x| + |n.y - destino.y|
 Hasta 5 destinos → 5! = 120 permutaciones
 Se evalúa cada ruta usando A*
 Se elige la ruta con menor distancia total
+
+⚡ Optimización aplicada:
+
+- Generación de matriz de distancias entre puntos
+- Evaluación de todas las combinaciones posibles
+- Selección de la ruta global más eficiente
 
 🗂️ Estructura del Proyecto
 
@@ -138,6 +167,14 @@ Resultado:
 Entrada → (4,1) → (2,6) → (10,3) → (10,7) → (14,3)
 Distancia total: 35 celdas
 ```
+🚀 Resultados
+
+El sistema es capaz de transformar pedidos complejos en rutas optimizadas en milisegundos, reduciendo significativamente el tiempo de recorrido dentro del almacén.
+
+✔ Optimización automática
+✔ Reducción de distancia recorrida
+✔ Mejora en productividad logística
+
 📊 Stack Tecnológico
 
 | Capa | Tecnología	| Uso |
