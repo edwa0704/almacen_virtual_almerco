@@ -1,13 +1,11 @@
 🏭 Almacén Virtual Almerco
 Sistema de Enrutamiento y Optimización de Picking
 
-![UI](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/ui.png)
+![UI](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/ui.png?v=2)
 
-![Tests](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/tests.png)
+![Tests](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/tests.png?v=2)
 
-![Vista 1](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/demo1.png)
-
-![Demo](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/demo.png)
+![Vista 1](https://raw.githubusercontent.com/edwa0704/almacen_virtual_almerco/main/assets/demo1.png?v=2)
 
 🧠 Descripción del Proyecto
 
