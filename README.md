@@ -153,20 +153,24 @@ Cada tramo se dibuja con un color distinto
 Destinos inválidos → 🔴 rojo
 Botón Limpiar reinicia
 
-📊 Ejemplo
+📊 Ejemplo (Actualizado)
 
-```bash
-Destino 1: (4,1)
-Destino 2: (10,3)
-Destino 3: (2,6)
-Destino 4: (10,7)
-Destino 5: (14,3)
-```
-Resultado:
-```bash
-Entrada → (4,1) → (2,6) → (10,3) → (10,7) → (14,3)
-Distancia total: 35 celdas
-```
+Configuración seleccionada en el panel:
+
+- Producto 1 → Estación 1 (Rojo) - Nivel 1  
+- Producto 2 → Estación 1 (Rojo) - Nivel 2  
+- Producto 3 → Estación 3 (Morado) - Nivel 2  
+- Producto 4 → Estación 5 (Verde) - Nivel 1  
+- Producto 5 → Estación 5 (Verde) - Nivel 4  
+
+🚀 Resultado generado por el sistema:
+
+Orden óptimo:
+Est. 1 (Niv. 1,2) → Est. 3 (Niv. 2) → Est. 5 (Niv. 1,4)
+
+Distancia total: **44 celdas**
+
+📌 Destinos procesados: 5
 🚀 Resultados
 
 El sistema es capaz de transformar pedidos complejos en rutas optimizadas en milisegundos, reduciendo significativamente el tiempo de recorrido dentro del almacén.
