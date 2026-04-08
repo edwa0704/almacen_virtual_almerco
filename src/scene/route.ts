@@ -1,49 +1,103 @@
 import * as THREE from 'three';
 import { Point } from '../core/grid';
 
-let routeGroup = new THREE.Group();
-let picker: THREE.Mesh | null = null;
-let animCurve: THREE.CatmullRomCurve3 | null = null;
-let progress = 0;
+export class RouteVisualizer {
+    private scene: THREE.Scene;
+    private routeGroup: THREE.Group = new THREE.Group();
+    private picker: THREE.Mesh | null = null;
+    private animCurve: THREE.CatmullRomCurve3 | null = null;
+    private progress: number = 0;
 
-export function drawFullRoute(scene: THREE.Scene, paths: Point[][], productsByStop: any[]) {
-    clearRoutes(scene);
-    routeGroup = new THREE.Group();
-    const colors = [0xff0055, 0x00e5ff, 0xffff00, 0xff00ff, 0x00ff00];
-    let allPoints: THREE.Vector3[] = [];
+    constructor(scene: THREE.Scene) {
+        this.scene = scene;
+    }
 
-    paths.forEach((path, i) => {
-        if (!path || path.length < 2) return;
-        const groundPts = path.map(p => new THREE.Vector3(p.x, 0.4, p.y));
-        allPoints.push(...groundPts);
-        const lastBase = groundPts[groundPts.length - 1].clone();
-        const stationProducts = productsByStop[i] || [];
-        stationProducts.forEach((prod: any) => {
-            const h = (prod.level * 1.5) - 0.2;
-            allPoints.push(lastBase.clone().setY(h), lastBase.clone().setY(h), lastBase.clone());
+    public drawPaths(paths: Point[][], levels: number[], stationIds: string[]) {
+        this.clear();
+        this.routeGroup = new THREE.Group();
+        const colors = [0xff0055, 0x00e5ff, 0xffff00, 0xff00ff, 0x00ff00];
+        let allPoints: THREE.Vector3[] = [];
+
+        const shelfOffsets: Record<string, { dx: number, dy: number }> = {
+            '1': { dx: -8, dy: 0 },
+            '2': { dx: 8, dy: 0 },
+            '3': { dx: 0, dy: -8 },
+            '4': { dx: 0, dy: 8 },
+            '5': { dx: -5, dy: 0 },
+        };
+
+        paths.forEach((path, i) => {
+            if (!path || path.length === 0) return;
+            
+            const groundPts = path.map(p => new THREE.Vector3(p.x, 0.4, p.y));
+            allPoints.push(...groundPts);
+            
+            // Solo dibuja el tubo del suelo si hay movimiento horizontal
+            if (groundPts.length >= 2) {
+                const curve = new THREE.CatmullRomCurve3(groundPts);
+                const tube = new THREE.Mesh(
+                    new THREE.TubeGeometry(curve, 64, 0.15, 8, false),
+                    new THREE.MeshPhongMaterial({ 
+                        color: colors[i % colors.length], 
+                        emissive: colors[i % colors.length], 
+                        emissiveIntensity: 0.5 
+                    })
+                );
+                this.routeGroup.add(tube);
+            }
+
+            // Dibuja la subida vertical SIEMPRE, incluso si no hubo movimiento horizontal
+            if (i < levels.length && i < stationIds.length) {
+                const lastPt = groundPts[groundPts.length - 1];
+                const targetLevel = levels[i];
+                const stationId = stationIds[i];
+                const height = targetLevel * 1.5 - 0.75;
+                const offset = shelfOffsets[stationId] || { dx: 0, dy: 0 };
+
+                const hookPts = [
+                    lastPt.clone(),
+                    new THREE.Vector3(lastPt.x, height, lastPt.z),
+                    new THREE.Vector3(lastPt.x + offset.dx, height, lastPt.z + offset.dy)
+                ];
+                
+                allPoints.push(hookPts[1], hookPts[2], hookPts[1]);
+
+                const hookCurve = new THREE.CatmullRomCurve3(hookPts);
+                const hookTube = new THREE.Mesh(
+                    new THREE.TubeGeometry(hookCurve, 20, 0.15, 8, false),
+                    new THREE.MeshPhongMaterial({ 
+                        color: colors[i % colors.length],
+                        emissive: colors[i % colors.length],
+                        emissiveIntensity: 0.3
+                    })
+                );
+                this.routeGroup.add(hookTube);
+            }
         });
-        const curve = new THREE.CatmullRomCurve3(allPoints.slice(-groundPts.length - (stationProducts.length * 3)));
-        routeGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 80, 0.18, 8, false), new THREE.MeshPhongMaterial({ color: colors[i % colors.length], emissive: colors[i % colors.length], emissiveIntensity: 0.8 })));
-    });
 
-    if (allPoints.length > 1) {
-        animCurve = new THREE.CatmullRomCurve3(allPoints);
-        picker = new THREE.Mesh(new THREE.SphereGeometry(0.7), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        scene.add(picker, routeGroup);
+        if (allPoints.length > 1) {
+            this.animCurve = new THREE.CatmullRomCurve3(allPoints);
+            this.picker = new THREE.Mesh(
+                new THREE.SphereGeometry(0.6, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            this.scene.add(this.picker, this.routeGroup);
+        }
+        this.progress = 0;
     }
-    progress = 0;
-}
 
-export function animatePicker() {
-    if (picker && animCurve) {
-        progress += 0.0015; if (progress > 1) progress = 0;
-        picker.position.copy(animCurve.getPointAt(progress));
+    public animate() {
+        if (this.picker && this.animCurve) {
+            this.progress += 0.002;
+            if (this.progress > 1) this.progress = 0;
+            this.picker.position.copy(this.animCurve.getPointAt(this.progress));
+        }
     }
-}
 
-export function clearRoutes(scene: THREE.Scene) {
-    if (picker) scene.remove(picker);
-    scene.remove(routeGroup);
-    routeGroup = new THREE.Group();
-    animCurve = null;
+    public clear() {
+        if (this.picker) this.scene.remove(this.picker);
+        this.scene.remove(this.routeGroup);
+        this.routeGroup = new THREE.Group();
+        this.animCurve = null;
+    }
 }

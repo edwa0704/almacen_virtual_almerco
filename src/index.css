@@ -1,0 +1,249 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos Base */
+body { 
+    margin: 0; 
+    padding: 0; 
+    overflow: hidden; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+    background: #e0e0e0; 
+}
+
+/* Barra Superior (Header) */
+header { 
+    background: #102027; 
+    color: white; 
+    padding: 12px 25px; 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    border-bottom: 4px solid #00c853; 
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.header-title { font-weight: bold; font-size: 1.3em; letter-spacing: 0.5px; }
+.header-subtitle { color: #9fa8da; font-size: 0.9em; flex: 1; }
+.badge { background: #00c853; padding: 3px 10px; border-radius: 15px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
+
+/* Contenedor Principal */
+#main-container { 
+    display: flex; 
+    width: 100%;
+    height: calc(100vh - 60px); /* ALTURA FIJA: Total menos el header */
+    overflow: hidden;
+    position: relative;
+}
+
+/* Área del Almacén 3D (Izquierda) */
+#canvas-container { 
+    flex: 1; 
+    height: 100%;
+    position: relative; 
+    background: #d0d0d0; 
+    overflow: hidden;
+}
+
+/* Panel Lateral de Picking (Derecha) */
+#sidebar { 
+    width: 350px; 
+    height: 100%; /* 100% de los (100vh - 60px) */
+    background: #102027; 
+    color: white; 
+    display: flex;
+    flex-direction: column;
+    border-left: 2px solid #37474f;
+    box-shadow: -5px 0 20px rgba(0,0,0,0.5); 
+    overflow: hidden; /* El scroll lo maneja el contenido interno */
+}
+
+.sidebar-header {
+    padding: 20px;
+    background: #102027;
+    border-bottom: 2px solid #00c853;
+    flex: 0 0 auto;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: scroll; /* FORZAR SCROLLBAR SIEMPRE */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 150px; /* Espacio extra al final */
+}
+
+/* Scrollbar Estilizado y Grueso para que sea fácil de ver */
+.sidebar-content::-webkit-scrollbar {
+    width: 14px;
+}
+.sidebar-content::-webkit-scrollbar-track {
+    background: #0a1418;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #00c853;
+    border-radius: 7px;
+    border: 3px solid #0a1418;
+}
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: #00e676;
+}
+
+h2 { color: #00e676; font-size: 1em; margin: 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; }
+
+/* Estilos de los Inputs */
+.input-group { 
+    background: #002438; /* Azul profundo más vibrante */
+    padding: 15px; 
+    border-radius: 10px; 
+    border: 1px solid #004d40; 
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.input-group:hover { 
+    border-color: #00c853; 
+    background: #00304a;
+    box-shadow: 0 0 15px rgba(0, 200, 83, 0.2);
+    transform: translateX(5px);
+}
+label { 
+    display: block; 
+    font-size: 0.8em; 
+    color: #00e676; /* Verde neón para máxima visibilidad */
+    margin-bottom: 10px; 
+    font-weight: 900; 
+    text-transform: uppercase; 
+    letter-spacing: 1.2px;
+    text-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+}
+
+/* Eliminar definiciones duplicadas o conflictivas */
+#inputs-container {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    overflow: visible;
+}
+
+.btn-action { 
+    width: 100%; 
+    padding: 14px; 
+    border: none; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    font-size: 0.95em;
+    transition: all 0.2s ease;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 10px;
+    margin-bottom: 10px;
+}
+#btnOptimizar { background: #ff5252; color: white; margin-top: 10px; }
+#btnOptimizar:hover { background: #ff1744; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+#btnLimpiar { background: #546e7a; color: white; margin-top: 8px; }
+#btnLimpiar:hover { background: #455a64; transform: translateY(-2px); }
+
+/* Panel de Resultados */
+.result-panel { 
+    background: #1c313a; 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-top: 15px; 
+    border-left: 6px solid #00c853; 
+    animation: slideIn 0.3s ease-out;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Leyenda */
+.legend { margin-top: 25px; border-top: 1px solid #37474f; padding-top: 15px; }
+.legend-title { font-size: 0.9em; margin-bottom: 12px; color: #00c853; font-weight: bold; }
+.legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85em; color: #e0e0e0; }
+.dot { width: 14px; height: 14px; border-radius: 3px; margin-right: 12px; }
+
+/* Checklist de Fases */
+.checklist { 
+    margin-top: 25px; 
+    background: #1c313a; 
+    padding: 15px; 
+    border-radius: 10px; 
+    font-size: 0.82em; 
+    border: 1px solid #37474f;
+}
+.check-item { margin-bottom: 7px; color: #a5d6a7; display: flex; align-items: center; gap: 10px; }
+.check-item.current { color: #ffab40; font-weight: bold; }
+
+/* Controles Flotantes de Cámara */
+.camera-controls {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    background: rgba(16, 32, 39, 0.9);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #00c853;
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.btn-reset-view {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: #00c853;
+    color: #102027;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-reset-view:hover {
+    background: #00e676;
+    transform: translateY(-2px);
+}
+
+.btn-reset-text {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.zoom-slider-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    height: 150px;
+}
+
+.zoom-slider {
+    writing-mode: bt-lr; /* Bottom to top */
+    appearance: slider-vertical;
+    width: 8px;
+    height: 120px;
+    cursor: pointer;
+}
+
+.zoom-label {
+    color: white;
+    font-size: 0.7em;
+    font-weight: bold;
+    text-transform: uppercase;
+}

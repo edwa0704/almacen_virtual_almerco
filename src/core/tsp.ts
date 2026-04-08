@@ -1,42 +1,72 @@
-import { Grid, Point } from './grid';
-import { findPath } from './pathfinder';
+import { Grid, Point } from "./grid";
+import { findPath } from "./pathfinder";
 
-export async function solvePickingTSP(grid: Grid, entrance: Point, targets: Point[]) {
-    if (targets.length === 0) return null;
-    const allNodes = [entrance, ...targets];
-    const memo: Record<string, Point[]> = {};
+export function permutations<T>(arr: T[]): T[][] {
+  if (arr.length <= 1) return [arr];
+  return arr.flatMap((item, i) => {
+    const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+    return permutations(rest).map((p) => [item, ...p]);
+  });
+}
 
-    for (let i = 0; i < allNodes.length; i++) {
-        for (let j = 0; j < allNodes.length; j++) {
-            if (i === j) continue;
-            const key = `${allNodes[i].x},${allNodes[i].y}-${allNodes[j].x},${allNodes[j].y}`;
-            memo[key] = findPath(grid, allNodes[i], allNodes[j]);
-        }
+export interface TSPResult {
+  order: Point[];
+  totalDist: number;
+  paths: Point[][];
+}
+
+export async function solveTSP(
+  grid: Grid,
+  entrance: Point,
+  destinations: Point[]
+): Promise<TSPResult> {
+  if (destinations.length === 0) {
+    return { order: [], totalDist: 0, paths: [] };
+  }
+
+  const allNodes = [entrance, ...destinations];
+  const memo: Record<string, Point[]> = {};
+
+  // Pre-calculate all necessary paths with memoization
+  for (let i = 0; i < allNodes.length; i++) {
+    for (let j = 0; j < allNodes.length; j++) {
+      const key = `${allNodes[i].x},${allNodes[i].y}-${allNodes[j].x},${allNodes[j].y}`;
+      if (i === j) {
+        memo[key] = [allNodes[i]];
+      } else {
+        memo[key] = findPath(grid, allNodes[i], allNodes[j]);
+      }
+    }
+  }
+
+  const perms = permutations(destinations);
+  let best: TSPResult = {
+    order: perms[0],
+    totalDist: Infinity,
+    paths: [],
+  };
+
+  for (const perm of perms) {
+    const stops = [entrance, ...perm];
+    let totalDist = 0;
+    const paths: Point[][] = [];
+    let valid = true;
+
+    for (let i = 0; i < stops.length - 1; i++) {
+      const key = `${stops[i].x},${stops[i].y}-${stops[i + 1].x},${stops[i + 1].y}`;
+      const path = memo[key];
+      if (!path || path.length === 0) {
+        valid = false;
+        break;
+      }
+      totalDist += Math.max(0, path.length - 1);
+      paths.push(path);
     }
 
-    const getPerms = (arr: Point[]): Point[][] => {
-        if (arr.length <= 1) return [arr];
-        return arr.flatMap((v, i) => getPerms([...arr.slice(0, i), ...arr.slice(i + 1)]).map(p => [v, ...p]));
-    };
-
-    const perms = getPerms(targets);
-    let bestDist = Infinity;
-    let bestOrder: Point[] = [];
-
-    for (const p of perms) {
-        const full = [entrance, ...p];
-        let d = 0;
-        for (let i = 0; i < full.length - 1; i++) {
-            const k = `${full[i].x},${full[i].y}-${full[i+1].x},${full[i+1].y}`;
-            d += memo[k].length - 1;
-        }
-        if (d < bestDist) { bestDist = d; bestOrder = p; }
+    if (valid && totalDist < best.totalDist) {
+      best = { order: perm, totalDist, paths };
     }
+  }
 
-    const finalPaths: Point[][] = [];
-    const finalOrder = [entrance, ...bestOrder];
-    for (let i = 0; i < finalOrder.length - 1; i++) {
-        finalPaths.push(memo[`${finalOrder[i].x},${finalOrder[i].y}-${finalOrder[i+1].x},${finalOrder[i+1].y}`]);
-    }
-    return { paths: finalPaths, totalDist: bestDist, order: bestOrder };
+  return best;
 }
